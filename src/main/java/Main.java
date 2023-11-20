@@ -1,3 +1,8 @@
+import searches.BinarySearch;
+import searches.LinearSearch;
+import sorts.InsertionSort;
+import sorts.MergeSort;
+
 import java.util.Scanner;
 
 public class Main {
