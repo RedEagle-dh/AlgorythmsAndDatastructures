@@ -1,178 +1,276 @@
 package SparseProject;
 
 public class SparseVector {
+    int size = 0;
+    int dimensions;
+    Node head = new Node(-1, -1);
 
-    Node head;
-
+    /**
+     * Constructs an empty SparseVector with zero dimensions.
+     * This constructor initializes a SparseVector with no elements, representing a vector with zero dimensions.
+     * The SparseVector class is optimized for memory efficiency by only storing non-zero elements.
+     *
+     * @see SparseVector
+     */
     public SparseVector() {
-        head = null;
+        this.dimensions = 0;
     }
 
     /**
-     * Create Sparse Vector with n dimensions. Data value filled with 0.0.
-     * @param length Integer
+     * Constructs a SparseVector with the specified dimensions.
+     * This constructor initializes a SparseVector with the given dimensions, representing a vector with sparse data.
+     * The SparseVector class is optimized for memory efficiency by only storing non-zero elements.
+     *
+     * @param dimensions The number of dimensions for the SparseVector. Must be greater than 0.
+     * @throws IllegalArgumentException If the specified dimensions are less than or equal to zero.
+     * @see SparseVector
      */
-    public SparseVector(int length) {
-        if (length <= 0) {
-            throw new IllegalArgumentException("Length must be greater than zero");
+    public SparseVector(int dimensions) {
+        if (dimensions <= 0) {
+            throw new IllegalArgumentException("The dimensions must be greater than 0");
         }
-        head = new Node(0.0, 0, null);
-        Node current = head;
-
-        for (int i = 1; i < length; i++) {
-            Node newNode = new Node(0.0, i, null);
-            current.next = newNode;
-            current = newNode;
-        }
+        this.dimensions = dimensions;
     }
 
     /**
-     * Sets an element at index n.
-     * @param index where the element should be set.
-     * @param value which value should be set at index.
+     * Retrieves the dimension of the Vector.
+     *
+     * @return The dimension of the Vector.
+     * @see SparseVector
      */
-    public void setElement(int index, double value) {
-        boolean foundAndSet = false;
+    int getLength() {
+        return dimensions;
+    }
+
+
+    /**
+     * Sets the element at the specified index in the SparseVector to the given value.
+     *
+     * @param index The index at which to set the element. Must be greater than 0 and less than or equal to dimensions.
+     * @param value The value to set at the specified index.
+     * @throws IllegalArgumentException If the index is greater than the dimensions or less than or equal to zero.
+     * @see SparseVector
+     */
+    void setElement(int index, double value) {
+        checkArguments(index);
+
+        // erstes Element
+        if (size == 0) {
+            head.setNext(new Node(index, value));
+            size++;
+            return;
+        }
         Node current = head;
-        while (current != null) {
-            if (current.index == index) {
-                current.value = value;
-                foundAndSet = true;
-                break;
+        while (current.getNext() != null) {
+            // Das Element hat bereits eine Node
+            if (current.getNext().getIndex() == index) {
+                // nur der Wert muss angepasst werden
+                current.getNext().setValue(value);
+                return;
             }
-            current = current.next;
-        }
-        if (!foundAndSet) {
-            throw new ArrayIndexOutOfBoundsException("Index " + index + " out of bounds for length " + getLength());
-        }
-    }
-
-    /**
-     * Returns the dimension of the vector.
-     * @return Integer
-     */
-    public int getLength() {
-        int length = 0;
-        Node current = head;
-        while (current != null) {
-            length++;
-            current = current.next;
-        }
-        return length;
-    }
-
-    /**
-     * Method for getting an element on given index.
-     * @param index Integer
-     * @return the value of the index or 0.0
-     */
-    public double getElement(int index) {
-        Node current = head;
-        while (current != null) {
-            if (current.index == index) {
-                return current.value;
+            if (index < current.getNext().getIndex()) {
+                // vorher einfügen
+                Node newNode = new Node(index, value);
+                newNode.setNext(current.getNext());
+                current.setNext(newNode);
+                size++;
+                return;
             }
-            current = current.next;
+            if (index > current.getNext().getIndex() && current.getNext().getNext() == null || index < current.getNext().getNext().getIndex()) {
+                // nachher einfügen (zwischen das nächste und übernächste oder zum Schluss)
+                Node newNode = new Node(index, value);
+                newNode.setNext(current.getNext().getNext());
+                current.getNext().setNext(newNode);
+                size++;
+                return;
+            }
+
+            current = current.getNext();
+
+        }
+    }
+
+    /**
+     * Retrieves the element at the specified index in the SparseVector.
+     *
+     * @param index The index of the element to retrieve. Must be greater than 0 and less than or equal to dimensions.
+     * @return The value of the element at the specified index. Returns 0.0 if the index is not found.
+     * @throws IllegalArgumentException If the index is greater than the dimensions or less than or equal to zero.
+     * @see SparseVector
+     */
+    double getElement(int index) {
+        checkArguments(index);
+
+        Node current = head;
+        while (current.getNext() != null) {
+            if (current.getNext().getIndex() == index) {
+                return current.getNext().getValue();
+            }
+            current = current.getNext();
         }
         return 0.0;
     }
 
     /**
-     * Removes an element at index n.
-     * @param index where an element should be removed.
+     * Removes the element at the specified index from the SparseVector.
+     *
+     * @param index The index of the element to remove. Must be greater than 0 and less than or equal to dimensions.
+     * @throws IllegalArgumentException If the index is greater than the dimensions or less than or equal to zero.
+     * @see SparseVector
      */
-    public void removeElement(int index) {
-        boolean foundAndRemoved = false;
-        Node current = head;
-        Node last = current;
-        while (current != null) {
-            if (current.index == index) {
-                last.next = current.next;
-                foundAndRemoved = true;
-                break;
-            }
-            last = current;
-            current = current.next;
-        }
-        if (!foundAndRemoved) {
-            throw new ArrayIndexOutOfBoundsException("Index " + index + " out of bounds for length " + getLength());
-        }
-    }
-
-
-    /**
-     * Adding another vector to the current.
-     * @param other The other vector.
-     */
-    public void add(SparseVector other) {
-        Node otherCurrent = other.head;
-        while (otherCurrent != null) {
-            // Äquivalenter node zum other index
-            Node tmp = getNode(otherCurrent.index);
-            if (tmp != null) {
-                if (tmp.index == otherCurrent.index) {
-                    setElement(otherCurrent.index, tmp.value + otherCurrent.value);
-                } else {
-                    Node newNode = new Node(otherCurrent.value, otherCurrent.index, tmp.next);
-                    tmp.next = newNode;
+    void removeElement(int index) {
+        checkArguments(index);
+        if (size != 0) {
+            Node current = head;
+            while (current.getNext() != null) {
+                if (current.getNext().getIndex() == index) {
+                    if (current.getNext().getNext() == null) {
+                        current.setNext(null);
+                        size--;
+                        return;
+                    } else {
+                        current.setNext(current.getNext().getNext());
+                        size--;
+                        return;
+                    }
                 }
+                current = current.getNext();
             }
-            otherCurrent = otherCurrent.next;
         }
     }
 
     /**
-     * Checks if 2 vectors are equal.
-     * @param other The other vector.
-     * @return whether they are equal or not.
+     * Checks if the SparseVector is equal to another SparseVector.
+     *
+     * @param other The SparseVector to compare with.
+     * @return {@code true} if the SparseVectors are equal, {@code false} otherwise.
+     * @see SparseVector
      */
-    public boolean equals(SparseVector other) {
-        if (getLength() != other.getLength()) {
+    boolean equals(SparseVector other) {
+        Node thisCurrent = this.head;
+        Node otherCurrent = other.head;
+
+        if (this.dimensions != other.dimensions || this.size != other.size) {
             return false;
         }
-        Node otherCurrent = other.head;
-        while (otherCurrent != null) {
-            Node tmp = getNode(otherCurrent.index);
-            if (tmp.index != otherCurrent.index || tmp.value != otherCurrent.value) {
+        if (this.dimensions == 0) {
+            return true;
+        }
+
+        while (thisCurrent.getNext() != null && otherCurrent.getNext() != null) {
+            thisCurrent = thisCurrent.getNext();
+            otherCurrent = otherCurrent.getNext();
+            if (thisCurrent.getIndex() != otherCurrent.getIndex() || thisCurrent.getValue() != otherCurrent.getValue()) {
                 return false;
             }
-            otherCurrent = otherCurrent.next;
         }
         return true;
     }
 
-
     /**
-     * Private Method to get a Node from index or the last node if the index does not exist.
-     * @param index The index to check for a node.
-     * @return the node at index n or the node before index n.
+     * Adds the elements of another SparseVector to this SparseVector.
+     *
+     * @param other The SparseVector to add to this SparseVector.
+     * @throws IllegalArgumentException If the dimensions of the vectors are not equal or if both dimensions are not greater than 0.
+     * @see SparseVector
      */
-    private Node getNode(int index) {
-        Node current = head;
-        Node last = head;
-        while (current != null) {
-            if (current.index == index) {
-                return current;
-            } else if (current.index > index) {
-                return last;
-            }
-            last = current;
-            current = current.next;
-        }
-        return last;
-    }
+    void add(SparseVector other) {
+        Node thisCurrent = this.head;
+        Node otherCurrent = other.head;
 
+        if (this.dimensions != other.dimensions) {
+            throw new IllegalArgumentException("The dimensions of the vectors must be equal");
+        }
+        if (this.dimensions == 0) {
+            throw new IllegalArgumentException("The dimensions of the vectors must be greater than 0");
+        }
+        if (other.size == 0) {
+            //es wird nichts addiert
+            return;
+        }
+        while (otherCurrent.getNext() != null) {
+
+            while (thisCurrent.getNext() != null) {
+
+                if (thisCurrent.getNext().getIndex() == otherCurrent.getNext().getIndex()) {
+                    //Node schon vorhanden, aufaddieren
+                    thisCurrent.getNext().setValue(thisCurrent.getNext().getValue() + otherCurrent.getNext().getValue());
+                    thisCurrent = thisCurrent.getNext();
+                    break;
+
+                } else if (otherCurrent.getNext().getIndex() < thisCurrent.getNext().getIndex()) {
+                    //vorher einfügen
+                    Node newNode = new Node(otherCurrent.getNext().getIndex(), otherCurrent.getNext().getValue());
+                    newNode.setNext(thisCurrent.getNext());
+                    thisCurrent.setNext(newNode);
+                    size++;
+                    thisCurrent = thisCurrent.getNext();
+                    break;
+
+                } else if (otherCurrent.getNext().getIndex() > thisCurrent.getNext().getIndex() && thisCurrent.getNext().getNext() == null || otherCurrent.getNext().getIndex() < thisCurrent.getNext().getNext().getIndex()) {
+                    //nachher
+                    Node newNode = new Node(otherCurrent.getNext().getIndex(), otherCurrent.getNext().getValue());
+                    newNode.setNext(thisCurrent.getNext().getNext());
+                    thisCurrent.getNext().setNext(newNode);
+                    size++;
+                    thisCurrent = thisCurrent.getNext();
+                    break;
+                }
+                thisCurrent = thisCurrent.getNext();
+            }
+
+            otherCurrent = otherCurrent.getNext();
+        }
+
+
+    }
 
 
     static class Node {
         double value;
         int index;
         Node next;
-        public Node(double value, int index, Node next) {
-            this.value = value;
+
+        public Node(int index, double value) {
             this.index = index;
+            this.value = value;
+        }
+
+        public double getValue() {
+            return value;
+        }
+
+        public void setValue(double value) {
+            this.value = value;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public Node getNext() {
+            return next;
+        }
+
+        public void setNext(Node next) {
             this.next = next;
         }
     }
 
+    /**
+     * Checks the validity of the index argument for SparseVector operations.
+     *
+     * @param index The index to be checked.
+     * @throws IllegalArgumentException If the index is greater than the dimensions or less than or equal to zero.
+     * @see SparseVector
+     */
+    public void checkArguments(int index) {
+        if (this.dimensions < index) {
+            throw new IllegalArgumentException("The index must be less than or equal to the dimension");
+        }
+        if (index <= 0) {
+            throw new IllegalArgumentException("The index must be greater than 0");
+        }
+    }
 }
+
