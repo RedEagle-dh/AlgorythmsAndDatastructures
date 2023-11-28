@@ -3,7 +3,7 @@ package SparseProject;
 public class SparseVector {
     int size = 0;
     int dimensions;
-    Node head = new Node(-1, -1);
+    Node head = null;
 
     /**
      * Constructs an empty SparseVector with zero dimensions.
@@ -54,39 +54,24 @@ public class SparseVector {
     void setElement(int index, double value) {
         checkArguments(index);
 
-        // erstes Element
+
         if (size == 0) {
-            head.setNext(new Node(index, value));
+            head = new Node(index, value);
             size++;
             return;
         }
-        Node current = head;
-        while (current.getNext() != null) {
-            // Das Element hat bereits eine Node
-            if (current.getNext().getIndex() == index) {
-                // nur der Wert muss angepasst werden
-                current.getNext().setValue(value);
-                return;
-            }
-            if (index < current.getNext().getIndex()) {
-                // vorher einfügen
-                Node newNode = new Node(index, value);
-                newNode.setNext(current.getNext());
-                current.setNext(newNode);
-                size++;
-                return;
-            }
-            if (index > current.getNext().getIndex() && current.getNext().getNext() == null || index < current.getNext().getNext().getIndex()) {
-                // nachher einfügen (zwischen das nächste und übernächste oder zum Schluss)
-                Node newNode = new Node(index, value);
-                newNode.setNext(current.getNext().getNext());
-                current.getNext().setNext(newNode);
-                size++;
-                return;
-            }
-
-            current = current.getNext();
-
+        Node n = getNode(index);
+        if (n.getIndex() == index) {
+            n.setValue(value);
+        } else if (index > n.getIndex()) {
+            Node newNode = new Node(index, value);
+            newNode.setNext(n.getNext());
+            n.setNext(newNode);
+            size++;
+        } else if (index < n.getIndex()) {
+            Node newNode = new Node(index, value);
+            newNode.setNext(this.head.getNext());
+            this.head = newNode;
         }
     }
 
@@ -101,14 +86,13 @@ public class SparseVector {
     double getElement(int index) {
         checkArguments(index);
 
-        Node current = head;
-        while (current.getNext() != null) {
-            if (current.getNext().getIndex() == index) {
-                return current.getNext().getValue();
-            }
-            current = current.getNext();
+        Node toBeSearched = getNode(index);
+        if (toBeSearched == null || toBeSearched.getIndex() != index) {
+            return 0.0;
+        } else {
+            return toBeSearched.getValue();
         }
-        return 0.0;
+
     }
 
     /**
@@ -271,6 +255,21 @@ public class SparseVector {
         if (index <= 0) {
             throw new IllegalArgumentException("The index must be greater than 0");
         }
+    }
+
+    private Node getNode(int index) {
+        Node current = head;
+        Node last = head;
+        while (current != null) {
+            if (current.getIndex() == index) {
+                return current;
+            } else if (current.getIndex() > index) {
+                return last;
+            }
+            last = current;
+            current = current.getNext();
+        }
+        return last;
     }
 }
 
